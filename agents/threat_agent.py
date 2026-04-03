@@ -5,6 +5,7 @@ from agents.state import AgentState
 
 def extract_threat_intel_node(state: AgentState) -> dict:
     """Uses LLM to evaluate the TTPs from the anomalous events."""
+    print("\n[DEBUG] --- Executing extract_threat_intel_node ---")
     anomalies = state.get("anomalies", [])
     if not anomalies:
         return {"threat_intel": {"status": "No anomalies found", "summary": "System appears secure."}}

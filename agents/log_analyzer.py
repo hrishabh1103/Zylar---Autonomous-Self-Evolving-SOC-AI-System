@@ -2,6 +2,7 @@ from agents.state import AgentState
 
 def analyze_logs_node(state: AgentState) -> dict:
     """Parses raw logs and identifies actionable events."""
+    print("\n[DEBUG] --- Executing analyze_logs_node ---")
     raw_logs = state.get("raw_logs", [])
     
     parsed_events = []
@@ -10,6 +11,7 @@ def analyze_logs_node(state: AgentState) -> dict:
         source = log.get("_source", log) if isinstance(log, dict) else log
         
         parsed_events.append({
+            "event_id": source.get("event_id"),
             "timestamp": source.get("timestamp"),
             "event_type": source.get("event_type"),
             "source_ip": source.get("source_ip"),

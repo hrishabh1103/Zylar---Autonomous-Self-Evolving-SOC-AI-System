@@ -58,6 +58,14 @@ def init_db():
         )
     ''')
     
+    # Processed Events table to prevent log reprocessing
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS processed_events (
+            event_id TEXT PRIMARY KEY,
+            processed_at TEXT
+        )
+    ''')
+    
     conn.commit()
     conn.close()
 
@@ -176,6 +184,32 @@ def get_top_offenders(limit: int = 5) -> Dict[str, List[Dict]]:
     
     conn.close()
     return {"top_ips": ips, "top_users": users}
+
+def is_event_processed(event_id: str) -> bool:
+    """Checks if an event_id was already processed through the pipeline."""
+    if not event_id:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM processed_events WHERE event_id=?", (event_id,))
+    res = cursor.fetchone()
+    conn.close()
+    return res is not None
+
+def mark_event_processed(event_id: str):
+    """Marks an event_id as processed."""
+    if not event_id:
+        return
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("INSERT INTO processed_events (event_id, processed_at) VALUES (?, ?)", 
+                       (event_id, datetime.utcnow().isoformat() + "Z"))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        pass
+    finally:
+        conn.close()
 
 # Initialize DB on load
 if not os.path.exists(DB_PATH):

@@ -3,6 +3,7 @@ from agents.state import AgentState
 
 def build_threat_correlation_graph_node(state: AgentState) -> dict:
     """Uses NetworkX to build an attack graph from log events and identify highly connected entities."""
+    print("\n[DEBUG] --- Executing build_threat_correlation_graph_node ---")
     events = state.get("anomalies", [])
     if not events:
         return {"graph_centrality": 0.0}

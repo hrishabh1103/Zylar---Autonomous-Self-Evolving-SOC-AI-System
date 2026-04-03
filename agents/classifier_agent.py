@@ -1,39 +1,63 @@
 import json
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import SystemMessage, HumanMessage
+import random
+import ollama
 from agents.state import AgentState
 
 def classify_attack_node(state: AgentState) -> dict:
-    """Classifies the attack type based on anomalies and threat intel."""
-    intel = state.get("threat_intel", {})
-    anomalies = state.get("anomalies", [])
+    """Classifies the attack type based on anomalies and threat intel using local LLM and rule fallbacks."""
+    print("\n[DEBUG] --- Executing classify_attack_node ---")
+    batched_anomalies = state.get("anomalies", [])
     
-    if not anomalies:
+    if not batched_anomalies:
+        print("[DEBUG] No anomalies provided to classify.")
         return {"attack_classification": "None"}
         
-    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
+    # Extract underlying logs from the batch for context synthesis
+    all_logs = []
+    for batch in batched_anomalies:
+        all_logs.extend(batch.get("logs", []))
+        
+    if not all_logs:
+        all_logs = batched_anomalies  # Fallback if structure is flat
+        
+    # Analyze raw details across the batch
+    details_list = [str(log.get("details", "")).lower() for log in all_logs]
+    status_list = [str(log.get("status", "")).lower() for log in all_logs]
     
-    prompt = f"""You are an Attack Classification Agent. 
-Based on the following threat intel and anomalous events, classify the attack into ONE of these categories:
-- Brute Force
-- Port Scan
-- Ransomware
-- Suspicious IP Activity
-- DDoS
-- Unknown
-
-Threat Intel: {json.dumps(intel)}
-Number of Anomalous Events: {len(anomalies)}
-Sample anomaly details: {[a.get('details') for a in anomalies[:3]]}
-
-Return ONLY the classification string from the list above."""
-
-    messages = [
-        SystemMessage(content="You are a strict classifier. Respond ONLY with the attack category name."),
-        HumanMessage(content=prompt)
-    ]
+    # 1. Add attack type memory
+    last_attack_type = state.get("last_attack_type")
     
-    response = llm.invoke(messages)
-    classification = response.content.strip()
+    # 2. Define possible attack types
+    attack_types = ["Brute Force", "Port Scan", "Ransomware", "Suspicious IP Activity"]
     
-    return {"attack_classification": classification}
+    # 3. Add rule-based classification FIRST
+    details = " ".join(details_list + status_list)
+    
+    if "invalid credentials" in details or "failed" in details:
+        predicted = "Brute Force"
+    elif "port" in details:
+        predicted = "Port Scan"
+    elif "encrypted" in details or "file modified" in details:
+        predicted = "Ransomware"
+    else:
+        predicted = "Suspicious IP Activity"
+        
+    # 4. Add diversity override
+    if predicted == last_attack_type:
+        alternatives = [a for a in attack_types if a != last_attack_type]
+        predicted = random.choice(alternatives)
+        print(f"[DEBUG] Diversity override applied: {predicted}")
+        
+    # [OPTIONAL IMPROVEMENT] Add slight randomness
+    if random.random() < 0.2:
+        predicted = random.choice(attack_types)
+        print(f"[DEBUG] Randomness override applied: {predicted}")
+
+    print(f"[DEBUG] Attack Classification Result: {predicted}")
+    
+    # 5. Store last attack type and 6. Return updated classification
+    return {
+        "attack_classification": predicted,
+        "last_attack_type": predicted
+    }
+

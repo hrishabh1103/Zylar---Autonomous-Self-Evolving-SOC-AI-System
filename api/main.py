@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from apscheduler.schedulers.background import BackgroundScheduler
 from agents.log_analyzer import analyze_logs_node
 from agents.anomaly_agent import detect_anomalies_node
-from memory.sqlite_manager import get_top_offenders
+from memory.sqlite_manager import get_top_offenders, is_event_processed, mark_event_processed
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ZYLAR-Autonomous")
@@ -18,6 +18,8 @@ logger = logging.getLogger("ZYLAR-Autonomous")
 app = FastAPI(title="ZYLAR API - Autonomous Cybersecurity Platform")
 ES_HOST = "http://localhost:9200"
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), "..", "reports")
+
+anomaly_queue = []
 
 class RunWorkflowRequest(BaseModel):
     logs: List[Dict[str, Any]]
@@ -78,6 +80,7 @@ async def get_reports():
     
     # Sort by timestamp descending
     reports.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    print(f"Returning {len(reports)} reports")
     return {"reports": reports}
 
 @app.get("/api/offenders")
@@ -91,12 +94,12 @@ async def get_offenders():
         return {"status": "error", "data": {"top_ips": [], "top_users": []}}
 
 def check_for_threats():
-    """Background task to poll Elasticsearch and trigger workflows if anomalies detected."""
+    global anomaly_queue
     logger.info("Autonomous System: Scanning for threats...")
     try:
         es = Elasticsearch([ES_HOST])
         now = datetime.utcnow()
-        past = now - timedelta(seconds=30)
+        past = now - timedelta(seconds=120)  # Extend to 120s to match scheduler
         query = {
             "query": {
                 "range": {
@@ -112,20 +115,58 @@ def check_for_threats():
         logs = [hit["_source"] for hit in res["hits"]["hits"]]
         
         if not logs:
-            logger.info("No logs in the last 30s.")
-            return
+            logger.info("No logs in the last 120s. Proceeding with empty list for debugging pipeline.")
+            # return # TEMPORARILY DISABLED FOR DEBUGGING
 
         # Pre-check for anomalies locally before running the full LLM heavy graph
         state = analyze_logs_node({"raw_logs": logs})
         state = detect_anomalies_node(state)
         
-        if state.get("anomalies"):
-            logger.warning(f"Detected {len(state['anomalies'])} anomalies! Triggering full workflow...")
+        anomalies = state.get("anomalies", [])
+        if anomalies:
+            logger.warning(f"Detected {len(anomalies)} anomalies! Queuing individually...")
+            
+            for anomaly in anomalies:
+                event_id = anomaly.get("event_id")
+                if event_id and is_event_processed(event_id):
+                    continue
+                # Only add if not already in queue
+                if not any(a.get("event_id") == event_id for a in anomaly_queue):
+                    anomaly_queue.append(anomaly)
+                    
+        print(f"Queue size: {len(anomaly_queue)}")
+        print(f"Processing 1 anomaly per cycle")
+        
+        if anomaly_queue:
             graph = build_workflow()
-            final_state = graph.invoke({"raw_logs": logs})
-            logger.info(f"Incident {final_state.get('incident_id')} recorded.")
+            anomaly = anomaly_queue.pop(0)
+            event_id = anomaly.get("event_id")
+                
+            if event_id:
+                print(f"Processing queued anomaly: {event_id} with {len(anomaly.get('logs', []))} logs")
+            else:
+                print("Processing queued fallback anomaly...")
+                
+            # Invoke the pipeline independently for this specific grouped anomaly
+            # Pass both the raw logs and the manually grouped anomaly array to bypass ML clearing
+            final_state = graph.invoke({
+                "raw_logs": anomaly.get("logs", [anomaly]),
+                "anomalies": [anomaly]
+            })
+            print("Generating incident...")
+            
+            risk_score = final_state.get('risk_score', 0)
+            incident_id = final_state.get('incident_id')
+            
+            if incident_id and incident_id != "None":
+                print(f"Incident created with risk: {risk_score}")
+                print("Report successfully generated and stored")
+            
+            if event_id:
+                mark_event_processed(event_id)
+                
         else:
-            logger.info("Logs analyzed. No statistical anomalies found.")
+            logger.info("Logs analyzed. No statistical anomalies found and queue is empty.")
             
     except Exception as e:
         logger.error(f"Error in autonomous check: {e}")
@@ -133,7 +174,13 @@ def check_for_threats():
 @app.on_event("startup")
 def start_scheduler():
     scheduler = BackgroundScheduler()
-    # Run every 30 seconds
-    scheduler.add_job(check_for_threats, 'interval', seconds=30)
+    # Run every 120 seconds, coalesce runs, only 1 instance
+    scheduler.add_job(
+        check_for_threats, 
+        'interval', 
+        seconds=120, 
+        max_instances=1, 
+        coalesce=True
+    )
     scheduler.start()
     logger.info("Autonomous background scheduler started.")

@@ -1,0 +1,15 @@
+Starting simulation for 15 seconds...
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Error pushing logs: Connection error caused by: ConnectionError(Connection error caused by: NewConnectionError(HTTPConnection(host='localhost', port=9200): Failed to establish a new connection: [Errno 61] Connection refused))
+Simulation finished.

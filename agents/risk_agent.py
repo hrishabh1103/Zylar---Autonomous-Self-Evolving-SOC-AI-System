@@ -54,6 +54,15 @@ def calculate_risk_node(state: AgentState) -> dict:
     
     final_score = int(min(100, risk_score))
     
+    print(f"\n[DEBUG] --- Executing calculate_risk_node ---")
+    print(f"[DEBUG] Attack Classification: {classification}")
+    print(f"[DEBUG] Anomaly Confidence: {anomaly_confidence}")
+    print(f"[DEBUG] Severity Weight: {severity_weight}")
+    print(f"[DEBUG] Historical Recurrence: {historical_recurrence}")
+    print(f"[DEBUG] Graph Centrality: {graph_centrality}")
+    print(f"[DEBUG] Asset Criticality: {asset_criticality}")
+    print(f"[DEBUG] Final Risk Score: {final_score}")
+    
     if final_score >= 80:
         category = "Critical"
     elif final_score >= 60:
@@ -62,6 +71,8 @@ def calculate_risk_node(state: AgentState) -> dict:
         category = "Medium"
     else:
         category = "Low"
+        
+    print(f"[DEBUG] Risk Category: {category}")
         
     # Update SQLite Memory with this latest offense
     update_entity_history(ips, users, final_score)

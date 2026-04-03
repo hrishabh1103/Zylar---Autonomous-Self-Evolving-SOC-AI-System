@@ -16,3 +16,4 @@ networkx>=3.2.1
 apscheduler>=3.10.4
 streamlit-autorefresh==1.0.1
 ollama>=0.1.7
+streamlit>=1.30.0

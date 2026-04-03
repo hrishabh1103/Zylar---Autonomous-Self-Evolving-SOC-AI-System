@@ -37,6 +37,7 @@ with tab1:
     attacks_count = 0
     top_ips = []
     top_users = []
+    reports = []
     
     # Fetch Data
     try:
@@ -45,7 +46,6 @@ with tab1:
             recent_logs = res.json().get("logs", [])
             
         rep_res = requests.get(f"{API_URL}/api/reports")
-        reports = []
         if rep_res.status_code == 200:
             reports = rep_res.json().get("reports", [])
             attacks_count = len(reports)

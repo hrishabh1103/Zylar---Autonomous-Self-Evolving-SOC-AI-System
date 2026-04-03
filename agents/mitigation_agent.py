@@ -4,6 +4,7 @@ from agents.state import AgentState
 
 def generate_mitigation_node(state: AgentState) -> dict:
     """Generates an action plan to mitigate the threat."""
+    print("\n[DEBUG] --- Executing generate_mitigation_node ---")
     classification = state.get("attack_classification", "None")
     risk_score = state.get("risk_score", 0)
     intel = state.get("threat_intel", {})

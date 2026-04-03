@@ -15,6 +15,7 @@ class AgentState(TypedDict):
     
     # Classification
     attack_classification: str
+    last_attack_type: str
     
     # Correlation & History
     graph_centrality: float
